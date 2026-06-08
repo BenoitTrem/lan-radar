@@ -1,0 +1,77 @@
+{
+  "name": "lan-radar",
+  "version": "1.0.0",
+  "description": "LAN network monitoring app built with Next.js + Electron",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"next dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "build": "next build && next export -o out",
+    "electron:build": "npm run build && electron-builder",
+    "next:dev": "next dev",
+    "electron:dev": "wait-on http://localhost:3000 && electron ."
+  },
+  "dependencies": {
+    "concurrently": "^8.2.0",
+    "framer-motion": "^11.0.0",
+    "lucide-react": "^0.383.0",
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.10.0",
+    "simple-icons": "^16.22.0",
+    "wait-on": "^7.2.0"
+  },
+  "optionalDependencies": {
+    "bonjour-service": "^1.4.0",
+    "local-devices": "^4.0.0",
+    "ping": "^0.4.4",
+    "speedtest-net": "^2.2.4"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "build": {
+    "appId": "com.lanradar.app",
+    "productName": "LAN Radar",
+    "files": [
+      "out/**/*",
+      "electron/**/*",
+      "node_modules/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/speedtest.exe",
+        "to": "speedtest.exe"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "target": "dmg",
+      "entitlements": "electron/entitlements.mac.plist",
+      "entitlementsInherit": "electron/entitlements.mac.plist",
+      "extendInfo": {
+        "NSLocalNetworkUsageDescription": "LAN Radar needs local network access to discover and monitor devices on your WiFi.",
+        "NSBonjourServices": [
+          "_http._tcp",
+          "_https._tcp",
+          "_googlecast._tcp",
+          "_amzn-wplay._tcp",
+          "_ipp._tcp",
+          "_printer._tcp",
+          "_pdl-datastream._tcp",
+          "_hap._tcp",
+          "_homekit._tcp"
+        ]
+      }
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  }
+}
