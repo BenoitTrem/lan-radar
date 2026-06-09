@@ -6,7 +6,6 @@ const https = require("https");
 const dgram = require("dgram");
 const mdns = require("bonjour-service");
 
-const isDev = process.env.NODE_ENV !== "production";
 let mainWindow;
 
 const OUI = {
@@ -188,10 +187,18 @@ function createWindow() {
 
   mainWindow.maximize();
   mainWindow.setMenuBarVisibility(false);
-  const url = isDev
-    ? "http://localhost:3000"
-    : `file://${path.join(__dirname, "../out/index.html")}`;
-  mainWindow.loadURL(url);
+
+  if (app.isPackaged) {
+    mainWindow.loadFile(path.join(__dirname, "../out/index.html"));
+  } else {
+    mainWindow.loadURL("http://localhost:3000");
+  }
+
+  mainWindow.webContents.on("will-navigate", (e, url) => {
+    if (!url.startsWith("file://")) {
+      e.preventDefault();
+    }
+  });
 }
 
 app.whenReady().then(createWindow);
@@ -254,15 +261,6 @@ async function getMdnsNamesBonjour() {
       console.log("mDNS names (bonjour):", names);
       resolve(names);
     }, 4000);
-  });
-}
-function checkBonjourInstalled() {
-  if (process.platform !== "win32") return Promise.resolve(true);
-  return new Promise((resolve) => {
-    const { exec } = require("child_process");
-    exec('sc query "Bonjour Service"', (err, stdout) => {
-      resolve(!err && stdout.includes("RUNNING"));
-    });
   });
 }
 
