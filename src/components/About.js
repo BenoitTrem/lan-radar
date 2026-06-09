@@ -84,7 +84,9 @@ export default function About() {
           LINKS
         </div>
         <button
-          onClick={() => openLink("https://github.com/YOUR_USERNAME/YOUR_REPO")}
+          onClick={() =>
+            openLink("https://github.com/BenoitTrem/lan-radar.git")
+          }
           className="filter-btn"
           style={{
             display: "flex",
@@ -100,7 +102,34 @@ export default function About() {
           <ExternalLink size={11} />
         </button>
       </div>
-
+      <div
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--border)",
+          borderRadius: 12,
+          padding: 24,
+          marginBottom: 16,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 11,
+            color: "var(--text-dim)",
+            letterSpacing: 2,
+            marginBottom: 12,
+          }}
+        >
+          OPEN SOURCE
+        </div>
+        <div
+          style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.8 }}
+        >
+          LAN Radar is open source and free to use. You are welcome to explore
+          the code, fork the repository, and build upon it for your own
+          projects. Contributions and feedback are always appreciated.
+        </div>
+      </div>
       {/* Legal */}
       <div
         style={{

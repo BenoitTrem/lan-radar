@@ -1,92 +1,103 @@
-# LAN Radar 📡
+# LAN Radar
 
-A local network monitoring desktop app built with **Next.js 14 + Electron**.
+A local network monitoring desktop application built with Next.js 14 and Electron.
 
 ## Features
 
-| Feature | Status | Notes |
-|---|---|---|
-| Live device list | ✅ | Vendor detection (Apple, Samsung, etc.) |
-| Join/leave notifications | ✅ | Toast overlay, auto-dismiss |
-| Network map | ✅ | Radial canvas visualization |
-| Ping monitor | ✅ | Live chart via Recharts |
-| Device uptime tracking | ✅ | Per-device since first seen |
-| Speed tests | ✅ | Uses `speedtest-net` in Electron |
-| Vendor detection | ✅ | OUI MAC prefix lookup |
-| LAN game discovery | ✅ | mDNS/Bonjour via `bonjour-service` |
+- Live device discovery with vendor detection (Apple, Samsung, Google, and more)
+- Join and leave notifications with auto-dismissing toast overlay
+- Ping monitor with live chart
+- Device uptime tracking per device since first seen
+- Speed test integration via Ookla Speedtest CLI
+- MAC address vendor lookup via OUI prefix table
+- Installed application browser with size, publisher, and install date
+- mDNS device name resolution via Bonjour
 
 ## Stack
 
 - **Next.js 14** — UI with App Router
-- **Electron 28** — native desktop shell + IPC bridge
-- **Recharts** — charts (ping history, speed test history)
-- **Canvas API** — network map
-- **node-arp / local-devices** — LAN scanning (Electron only)
-- **ping** — ICMP ping (Electron only)
-- **speedtest-net** — speed tests (Electron only)
-- **bonjour-service** — mDNS game/service discovery (Electron only)
+- **Electron 28** — native desktop shell and IPC bridge
+- **Recharts** — ping history and speed test history charts
+- **bonjour-service** — mDNS device name resolution
+- **ping** — ICMP ping (Electron main process only)
+
+## Requirements
+
+### Ookla Speedtest CLI (required for speed tests)
+
+The speed test feature requires the Ookla Speedtest CLI binary to be placed in the `resources/` folder of the project before building.
+
+1. Download the Windows CLI from: https://www.speedtest.net/apps/cli
+2. Extract the archive
+3. Place `speedtest.exe` into the `resources/` folder at the project root:
+
+```
+lan-radar/
+└── resources/
+└── speedtest.exe
+```
+
+The application will automatically detect it at runtime. Without this file, the speed test feature will not function.
+
+### Bonjour (optional, recommended)
+
+Installing Apple Bonjour improves device name resolution on Windows, particularly for Google Home, Apple, and other mDNS-capable devices.
+
+Download: https://support.apple.com/kb/DL999
 
 ## Getting Started
 
 ```bash
 npm install
-npm run dev          # runs Next.js + Electron concurrently
+npm run dev
 ```
+
+This runs Next.js and Electron concurrently.
 
 ## Production Build
 
 ```bash
-npm run electron:build   # outputs to /dist
+npm run electron:build
 ```
 
-## Architecture
+Output is placed in the `/dist` directory.
+
+## Project Structure
 
 ```
 lan-radar/
 ├── electron/
-│   ├── main.js        # Electron main process + IPC handlers
-│   └── preload.js     # contextBridge — safe API surface for renderer
+│   ├── main.js          # Electron main process and IPC handlers
+│   └── preload.js       # contextBridge API surface for the renderer
+├── resources/
+│   └── speedtest.exe    # Ookla Speedtest CLI (not included, see Requirements)
 ├── src/
-│   ├── app/           # Next.js App Router
+│   ├── app/
 │   │   ├── layout.js
-│   │   ├── page.js    # Dashboard shell
+│   │   ├── page.js      # Main dashboard shell
 │   │   └── globals.css
-│   ├── components/    # UI panels (DeviceList, NetworkMap, PingMonitor…)
-│   └── lib/           # Hooks (useDevices, useSpeedTest)
-├── next.config.js
+│   ├── components/      # UI panels (DeviceList, PingMonitor, SpeedTest, AppDiscovery)
+│   └── lib/             # Custom hooks (useDevices, useSpeedTest)
 └── package.json
 ```
 
-## IPC Flow
+## IPC Architecture
 
 ```
-Next.js renderer (page.js / hooks)
-        │  window.electronAPI.xxx()
-        ▼
-electron/preload.js  (contextBridge)
-        │  ipcRenderer.invoke / on
-        ▼
-electron/main.js  (ipcMain.handle)
-        │
-        ▼
-  native modules (ping, local-devices, speedtest-net, bonjour)
+Next.js renderer
+      |  window.electronAPI.xxx()
+      v
+electron/preload.js   (contextBridge)
+      |  ipcRenderer.invoke / on
+      v
+electron/main.js      (ipcMain.handle)
+      |
+      v
+native modules (ping, bonjour-service, Speedtest CLI, Windows Registry)
 ```
 
-## Adding Real Scanning
+## License
 
-Replace mock data in `src/lib/useDevices.js` with IPC calls:
+Copyright 2026 Benoit Tremblay. All rights reserved.
 
-```js
-// In useDevices.js useEffect:
-const devices = await window.electronAPI.startScan();
-setDevices(devices.map(d => ({ ...d, vendor: detectVendor(d.mac) })));
-```
-
-And in `electron/main.js`:
-
-```js
-ipcMain.handle('scan:start', async () => {
-  const localDevices = require('local-devices');
-  return await localDevices();
-});
-```
+This project is open source. You are welcome to explore the code, fork the repository, and build upon it for your own projects.
