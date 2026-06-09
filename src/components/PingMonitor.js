@@ -132,7 +132,7 @@ export default function PingMonitor({ devices, scanning, pingsReady }) {
                   "fadeIn .4s ease, fade-pulse 2s ease-in-out infinite",
               }}
             >
-              SCANNING NETWORK
+              SCANNING NETWORK...
             </div>
             <div
               style={{

@@ -69,7 +69,13 @@ function uptimeStr(joinedAt) {
   return `${Math.floor(s / 86400)}d`;
 }
 
-export default function DeviceList({ devices, permissionError, scanning }) {
+export default function DeviceList({
+  devices,
+  permissionError,
+  scanning,
+  onTestJoin,
+  onTestLeave,
+}) {
   const [bonjourStatus, setBonjourStatus] = useState(null);
   const [dismissed, setDismissed] = useState(bonjourDismissed);
 
@@ -96,6 +102,10 @@ export default function DeviceList({ devices, permissionError, scanning }) {
       >
         DEVICE LIST — {devices.length} TOTAL
       </h2>
+
+      {/* DEV ONLY — remove before shipping */}
+      {/* <button onClick={onTestJoin}>Test Join</button> */}
+      {/* <button onClick={onTestLeave}>Test Leave</button> */}
 
       {scanning && devices.length === 0 ? (
         <div
@@ -167,7 +177,7 @@ export default function DeviceList({ devices, permissionError, scanning }) {
                   "fadeIn .4s ease, fade-pulse 2s ease-in-out infinite",
               }}
             >
-              SCANNING NETWORK
+              SCANNING NETWORK...
             </div>
             <div
               style={{
@@ -284,6 +294,7 @@ export default function DeviceList({ devices, permissionError, scanning }) {
               </div>
             </div>
           )}
+
           {devices.length > 0 && (
             <div
               style={{

@@ -81,7 +81,13 @@ export default function Sidebar({ view, setView, devices, scanning, onScan }) {
 
         <button
           className="reload-btn"
-          onClick={() => window.location.reload()}
+          onClick={() => {
+            if (window.electronAPI) {
+              window.electronAPI.reloadApp();
+            } else {
+              window.location.reload();
+            }
+          }}
           title="Restart the application."
         >
           RESTART APP

@@ -122,6 +122,26 @@ export function useDevices() {
     return () => clearInterval(pingLoop.current);
   }, [devices.length]);
 
+  const testJoin = useCallback(() => {
+    const fakeDevice = {
+      id: "192.168.1.99",
+      ip: "192.168.1.99",
+      mac: "AA:BB:CC:DD:EE:FF",
+      hostname: "Test Device",
+      vendor: "Apple",
+      online: true,
+      joinedAt: Date.now(),
+    };
+    setDevices((prev) => [...prev, fakeDevice]);
+    pushNotif("join", fakeDevice);
+  }, [pushNotif]);
+
+  const testLeave = useCallback(() => {
+    const fake = devicesRef.current.find((d) => d.id === "192.168.1.99");
+    if (fake) pushNotif("leave", fake);
+    setDevices((prev) => prev.filter((d) => d.id !== "192.168.1.99"));
+  }, [pushNotif]);
+
   const startScan = useCallback(async () => {
     setScanning(true);
     setPingsReady(false);
@@ -148,5 +168,7 @@ export function useDevices() {
     startScan,
     permissionError,
     pingsReady,
+    testJoin,
+    testLeave,
   };
 }

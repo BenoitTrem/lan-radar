@@ -169,6 +169,14 @@ function lookupVendor(mac) {
   });
 }
 
+if (!app.isPackaged) {
+  require("electron-reload")(__dirname, {
+    electron: require(`${__dirname}/../node_modules/electron`),
+    forceHardReset: true,
+    hardResetMethod: "exit",
+  });
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     icon: path.join(__dirname, "../build/icon.ico"),
@@ -178,6 +186,7 @@ function createWindow() {
     minHeight: 700,
     titleBarStyle: "hiddenInset",
     backgroundColor: "#080c14",
+    show: false,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -194,10 +203,10 @@ function createWindow() {
     mainWindow.loadURL("http://localhost:3000");
   }
 
+  mainWindow.once("ready-to-show", () => mainWindow.show());
+
   mainWindow.webContents.on("will-navigate", (e, url) => {
-    if (!url.startsWith("file://")) {
-      e.preventDefault();
-    }
+    if (!url.startsWith("file://")) e.preventDefault();
   });
 }
 
@@ -1079,3 +1088,7 @@ ipcMain.handle("apps:reveal", (_e, name) => {
   });
 });
 ipcMain.handle("shell:openExternal", (_e, url) => shell.openExternal(url));
+
+ipcMain.handle("app:reload", () => {
+  mainWindow.reload();
+});

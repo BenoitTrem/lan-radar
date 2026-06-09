@@ -1,19 +1,18 @@
 "use client";
 import { useState, useEffect } from "react";
-import { ArrowUp, ArrowDown, FolderOpen } from "lucide-react";
-
-const ALPHABET = [
-  "ALL",
-  "#",
-  ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i)),
-];
+import {
+  ArrowUpAZ,
+  ArrowDownAZ,
+  ArrowUpFromLine,
+  ArrowDownFromLine,
+  FolderOpen,
+} from "lucide-react";
 
 export default function AppDiscovery() {
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
-  const [sizeSort, setSizeSort] = useState(null);
+  const [sort, setSort] = useState({ key: "name", dir: "asc" });
   const [revealing, setRevealing] = useState(null);
 
   useEffect(() => {
@@ -23,24 +22,51 @@ export default function AppDiscovery() {
     });
   }, []);
 
+  const setSortKey = (key) => {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, dir: prev.dir === "asc" ? "desc" : "asc" }
+        : { key, dir: key === "name" ? "asc" : "desc" },
+    );
+  };
+
   const filtered = apps
-    .filter((a) => {
-      const name = a.name.toLowerCase();
-      const matchSearch = name.includes(search.toLowerCase());
-      const matchFilter =
-        filter === "ALL"
-          ? true
-          : filter === "#"
-            ? /^[^a-z]/i.test(a.name)
-            : a.name.toUpperCase().startsWith(filter);
-      return matchSearch && matchFilter;
-    })
+    .filter((a) => a.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
-      if (!sizeSort) return 0;
-      const sa = a.size ?? -1;
-      const sb = b.size ?? -1;
-      return sizeSort === "asc" ? sa - sb : sb - sa;
+      if (sort.key === "name") {
+        const cmp = a.name.localeCompare(b.name);
+        return sort.dir === "asc" ? cmp : -cmp;
+      }
+      if (sort.key === "size") {
+        const sa = a.size ?? -1;
+        const sb = b.size ?? -1;
+        return sort.dir === "desc" ? sb - sa : sa - sb;
+      }
+      return 0;
     });
+
+  const SortBtn = ({
+    sortKey,
+    ascIcon: AscIcon,
+    descIcon: DescIcon,
+    label,
+  }) => {
+    const active = sort.key === sortKey;
+    const isDesc = active && sort.dir === "desc";
+    return (
+      <button
+        onClick={() => setSortKey(sortKey)}
+        className={`filter-btn ${active ? "active" : ""}`}
+        title={`Sort by ${label} ${isDesc ? "(descending)" : "(ascending)"}`}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          {active && isDesc ? <DescIcon size={12} /> : <AscIcon size={12} />}
+          {label}
+        </span>
+      </button>
+    );
+  };
+
   return (
     <div>
       <h2
@@ -50,50 +76,67 @@ export default function AppDiscovery() {
           color: "var(--text-dim)",
           letterSpacing: 2,
           marginTop: 30,
-          paddingBottom: 32,
+          paddingBottom: 52,
         }}
       >
         INSTALLED APPS — {apps.length} TOTAL
       </h2>
 
-      {/* Search */}
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search apps…"
-        className="search-input"
-      />
-
-      {/* Alphabet filter */}
+      {/* Search + sort */}
       <div
-        style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 24 }}
+        style={{
+          display: "flex",
+          gap: 10,
+          marginBottom: 20,
+          alignItems: "stretch",
+          paddingBottom: 32,
+        }}
       >
-        <button
-          onClick={() => setSizeSort((s) => (s === "asc" ? null : "asc"))}
-          className={`filter-btn ${sizeSort === "asc" ? "active" : ""}`}
+        <div
+          className="search-wrapper"
+          style={{
+            flex: 1,
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+          }}
         >
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <ArrowUp size={11} /> SIZE
-          </span>
-        </button>
-        <button
-          onClick={() => setSizeSort((s) => (s === "desc" ? null : "desc"))}
-          className={`filter-btn ${sizeSort === "desc" ? "active" : ""}`}
-        >
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <ArrowDown size={11} /> SIZE
-          </span>
-        </button>
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search apps…"
+            className="search-input"
+            style={{
+              flex: 1,
+              margin: 0,
+              width: "100%",
+              paddingRight: search ? 28 : 12,
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="search-clear-btn"
+              title="Clear search"
+            >
+              ✕
+            </button>
+          )}
+        </div>
 
-        {ALPHABET.map((l) => (
-          <button
-            key={l}
-            onClick={() => setFilter(l)}
-            className={`filter-btn ${filter === l ? "active" : ""}`}
-          >
-            {l}
-          </button>
-        ))}
+        <SortBtn
+          sortKey="name"
+          ascIcon={ArrowUpAZ}
+          descIcon={ArrowDownAZ}
+          label="Name"
+        />
+
+        <SortBtn
+          sortKey="size"
+          ascIcon={ArrowUpFromLine}
+          descIcon={ArrowDownFromLine}
+          label="Size"
+        />
       </div>
 
       {/* List */}
@@ -173,7 +216,7 @@ export default function AppDiscovery() {
               key={i}
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 180px 100px 110px 36px",
+                gridTemplateColumns: "1fr 280px 100px 110px 36px",
                 alignItems: "center",
                 gap: 16,
                 padding: "12px 20px",

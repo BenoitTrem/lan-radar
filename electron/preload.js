@@ -16,5 +16,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("device:update", (_e, data) => cb(data)),
   onDeviceJoin: (cb) => ipcRenderer.on("device:join", (_e, data) => cb(data)),
   onDeviceLeave: (cb) => ipcRenderer.on("device:leave", (_e, data) => cb(data)),
+  reloadApp: () => ipcRenderer.invoke("app:reload"),
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
 });
