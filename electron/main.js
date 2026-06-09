@@ -9,15 +9,13 @@ const mdns = require("bonjour-service");
 const isDev = process.env.NODE_ENV !== "production";
 let mainWindow;
 
-// Replace lookupVendor with a local OUI lookup
 const OUI = {
-  // Networking
   "000000": "Xerox",
   "0001C7": "Cisco",
   "000C29": "VMware",
   "000D3A": "Microsoft",
   "00505A": "IBM",
-  // Apple
+
   "000A27": "Apple",
   "000A95": "Apple",
   "0010FA": "Apple",
@@ -42,7 +40,7 @@ const OUI = {
   A85B78: "Apple",
   D0E140: "Apple",
   F0DBF8: "Apple",
-  // Google / Nest
+
   "000000": "Google",
   "1C1AC0": "Google",
   "3497F6": "Google",
@@ -53,7 +51,7 @@ const OUI = {
   "94EB2C": "Google",
   A47733: "Google",
   F88FCA: "Google",
-  // Samsung
+
   "002339": "Samsung",
   "0024E9": "Samsung",
   "002454": "Samsung",
@@ -63,7 +61,7 @@ const OUI = {
   "5C3C27": "Samsung",
   "8C71F8": "Samsung",
   CCF9E8: "Samsung",
-  // Amazon
+
   "0C47C9": "Amazon",
   "10AE60": "Amazon",
   "34D270": "Amazon",
@@ -76,7 +74,7 @@ const OUI = {
   B47C9C: "Amazon",
   F0272D: "Amazon",
   FC65DE: "Amazon",
-  // Netgear
+
   "001B2F": "Netgear",
   "001E2A": "Netgear",
   "002275": "Netgear",
@@ -93,7 +91,7 @@ const OUI = {
   A040A0: "Netgear",
   C03F0E: "Netgear",
   E091F5: "Netgear",
-  // TP-Link
+
   "0014D1": "TP-Link",
   "001999": "TP-Link",
   "1062EB": "TP-Link",
@@ -108,11 +106,11 @@ const OUI = {
   C46E1F: "TP-Link",
   E8DE27: "TP-Link",
   F4F26D: "TP-Link",
-  // Raspberry Pi
+
   B827EB: "Raspberry Pi",
   DCA632: "Raspberry Pi",
   E45F01: "Raspberry Pi",
-  // Canon
+
   "000085": "Canon",
   "00000C": "Canon",
   "00001E": "Canon",
@@ -124,7 +122,7 @@ const OUI = {
   "8C170A": "Canon",
   ACB571: "Canon",
   E4B31B: "Canon",
-  // Arcadyan (ISP routers/modems)
+
   "002275": "Arcadyan",
   "0090D0": "Arcadyan",
   283537: "Arcadyan",
@@ -133,7 +131,7 @@ const OUI = {
   "74B57E": "Arcadyan",
   "84E235": "Arcadyan",
   "9C97F6": "Arcadyan",
-  // Misc
+
   "080027": "VirtualBox",
   "0050F2": "Microsoft",
   "00163E": "Xen",
@@ -144,7 +142,6 @@ function lookupVendor(mac) {
   const prefix = mac.replace(/:/g, "").slice(0, 6).toUpperCase();
   if (OUI[prefix]) return Promise.resolve(OUI[prefix]);
 
-  // Only hit the API if local lookup misses, with a short timeout
   return new Promise((resolve) => {
     const req = https.get(
       `https://api.maclookup.app/v2/macs/${prefix}`,
@@ -175,6 +172,7 @@ function lookupVendor(mac) {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
+    icon: path.join(__dirname, "../build/icon.ico"),
     width: 1400,
     height: 900,
     minWidth: 1100,
@@ -187,6 +185,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+
   mainWindow.maximize();
   mainWindow.setMenuBarVisibility(false);
   const url = isDev
@@ -206,9 +205,9 @@ async function getMdnsNames() {
   const hasBonjour = await checkBonjourInstalled();
   console.log("[mdns] Bonjour available:", hasBonjour);
   if (hasBonjour) {
-    return getMdnsNamesBonjour(); // your clean Bonjour path
+    return getMdnsNamesBonjour();
   } else {
-    return getMdnsNamesWindows(); // your raw UDP fallback
+    return getMdnsNamesWindows();
   }
 }
 
@@ -270,56 +269,50 @@ function checkBonjourInstalled() {
 async function getMdnsNamesWindows() {
   const names = {};
 
-  // Raw mDNS query over multicast UDP — no Bonjour needed
   await new Promise((resolve) => {
     const MDNS_ADDR = "224.0.0.251";
     const MDNS_PORT = 5353;
 
-    // Build a DNS query for _googlecast._tcp.local PTR record
     function buildMdnsQuery(service) {
       const parts = service.split(".");
       let buf = Buffer.alloc(512);
       let offset = 0;
 
-      // Header: ID=0, flags=0 (standard query), 1 question
       buf.writeUInt16BE(0x0000, offset);
-      offset += 2; // ID
+      offset += 2;
       buf.writeUInt16BE(0x0000, offset);
-      offset += 2; // Flags
+      offset += 2;
       buf.writeUInt16BE(0x0001, offset);
-      offset += 2; // QDCount=1
+      offset += 2;
       buf.writeUInt16BE(0x0000, offset);
-      offset += 2; // ANCount
+      offset += 2;
       buf.writeUInt16BE(0x0000, offset);
-      offset += 2; // NSCount
+      offset += 2;
       buf.writeUInt16BE(0x0000, offset);
-      offset += 2; // ARCount
+      offset += 2;
 
-      // QNAME
       for (const part of parts) {
         buf[offset++] = part.length;
         buf.write(part, offset, "ascii");
         offset += part.length;
       }
-      buf[offset++] = 0x00; // end of name
+      buf[offset++] = 0x00;
 
       buf.writeUInt16BE(0x000c, offset);
-      offset += 2; // QTYPE = PTR
+      offset += 2;
       buf.writeUInt16BE(0x8001, offset);
-      offset += 2; // QCLASS = IN + unicast-response bit
+      offset += 2;
 
       return buf.slice(0, offset);
     }
 
     function parseMdnsResponse(msg) {
-      // Very simple parser — just extract PTR and A records
       try {
         let offset = 0;
         const qdCount = msg.readUInt16BE(4);
         const anCount = msg.readUInt16BE(6);
         offset = 12;
 
-        // Skip questions
         for (let i = 0; i < qdCount; i++) {
           while (offset < msg.length && msg[offset] !== 0) {
             if ((msg[offset] & 0xc0) === 0xc0) {
@@ -329,13 +322,11 @@ async function getMdnsNamesWindows() {
             offset += msg[offset] + 1;
           }
           if (msg[offset] === 0) offset++;
-          offset += 4; // type + class
+          offset += 4;
         }
 
-        // Parse answers
         const results = { ptrs: [], addresses: {} };
         for (let i = 0; i < anCount; i++) {
-          // Name (skip it)
           while (offset < msg.length) {
             if ((msg[offset] & 0xc0) === 0xc0) {
               offset += 2;
@@ -350,15 +341,13 @@ async function getMdnsNamesWindows() {
           if (offset + 10 > msg.length) break;
           const type = msg.readUInt16BE(offset);
           offset += 2;
-          offset += 2; // class
-          offset += 4; // ttl
+          offset += 2;
+          offset += 4;
           const rdLen = msg.readUInt16BE(offset);
           offset += 2;
           const rdStart = offset;
 
           if (type === 0x0c) {
-            // PTR
-            // Read the pointed-to name
             let nameOffset = offset;
             let name = "";
             let safety = 0;
@@ -379,7 +368,6 @@ async function getMdnsNamesWindows() {
             }
             if (name) results.ptrs.push(name);
           } else if (type === 0x01 && rdLen === 4) {
-            // A record
             const ip = `${msg[offset]}.${msg[offset + 1]}.${msg[offset + 2]}.${msg[offset + 3]}`;
             results.addresses[ip] = true;
           }
@@ -393,17 +381,17 @@ async function getMdnsNamesWindows() {
 
     const sock = dgram.createSocket({ type: "udp4", reuseAddr: true });
     const services = [
-      "_googlecast._tcp.local", // Chromecast, Google Home
-      "_googlerpc._tcp.local", // Google devices RPC
-      "_matter._tcp.local", // Matter/Thread smart home
-      "_amzn-wplay._tcp.local", // Amazon Fire TV
-      "_amzn-alexa._tcp.local", // Alexa/Echo
-      "_http._tcp.local", // Generic HTTP devices
-      "_ipp._tcp.local", // Printers
-      "_hap._tcp.local", // HomeKit
-      "_lifx._udp.local", // LIFX bulbs
-      "_sleep-proxy._udp.local", // Apple sleep proxy (catches Macs/iPhones)
-      "_device-info._tcp.local", // Generic device info
+      "_googlecast._tcp.local",
+      "_googlerpc._tcp.local",
+      "_matter._tcp.local",
+      "_amzn-wplay._tcp.local",
+      "_amzn-alexa._tcp.local",
+      "_http._tcp.local",
+      "_ipp._tcp.local",
+      "_hap._tcp.local",
+      "_lifx._udp.local",
+      "_sleep-proxy._udp.local",
+      "_device-info._tcp.local",
     ];
 
     sock.on("error", (e) => {
@@ -423,14 +411,12 @@ async function getMdnsNamesWindows() {
         Object.keys(parsed.addresses),
       );
 
-      // Map sender IP → friendly name from PTR
       if (parsed.ptrs.length > 0) {
         const friendlyName = parsed.ptrs[0].split(".")[0];
         if (!names[rinfo.address]) {
           names[rinfo.address] = friendlyName;
           console.log(`[mdns-raw] PTR: ${rinfo.address} → ${friendlyName}`);
         }
-        // Also map any A record IPs that appeared alongside this PTR
         for (const ip of Object.keys(parsed.addresses)) {
           if (!names[ip]) {
             names[ip] = friendlyName;
@@ -441,11 +427,9 @@ async function getMdnsNamesWindows() {
     });
 
     sock.bind(5353, () => {
-      // Get your real WiFi IP (not VMware's 192.168.150.x or 192.168.159.x)
       const { networkInterfaces } = require("os");
       const nets = networkInterfaces();
       let wifiIp = null;
-      // Auto-detect real WiFi — skip VMware/VirtualBox/loopback adapters
       const VIRTUAL_PREFIXES = [
         "vmware",
         "vmnet",
@@ -473,8 +457,8 @@ async function getMdnsNamesWindows() {
       }
       console.log("[mdns-raw] binding to interface:", wifiIp);
 
-      sock.addMembership(MDNS_ADDR, wifiIp); // ← force correct interface
-      sock.setMulticastInterface(wifiIp); // ← force outbound too
+      sock.addMembership(MDNS_ADDR, wifiIp);
+      sock.setMulticastInterface(wifiIp);
       sock.setMulticastTTL(255);
 
       for (const service of services) {
@@ -503,7 +487,6 @@ async function getNetbiosNameWindows(ip) {
       console.log(`nbtstat ${ip} stdout:`, stdout?.slice(0, 200));
       console.log(`nbtstat ${ip} err:`, err?.message);
       if (err) return reject(err);
-      // Windows nbtstat output varies by locale, try multiple patterns
       const match =
         stdout.match(/^\s*(\S+)\s+<00>\s+UNIQUE/m) ||
         stdout.match(/^\s*(\S+)\s+<00>\s+Unique/m) ||
@@ -546,9 +529,9 @@ async function queryMdnsUnicast(ip) {
       }
       buf[offset++] = 0x00;
       buf.writeUInt16BE(0x000c, offset);
-      offset += 2; // PTR
+      offset += 2;
       buf.writeUInt16BE(0x0001, offset);
-      offset += 2; // IN
+      offset += 2;
       return buf.slice(0, offset);
     }
 
@@ -567,11 +550,9 @@ async function queryMdnsUnicast(ip) {
 
     sock.on("message", (msg) => {
       if (resolved) return;
-      // Look for any readable label in the response
       try {
         let offset = 12;
         const anCount = msg.readUInt16BE(6);
-        // Skip questions
         const qdCount = msg.readUInt16BE(4);
         for (let i = 0; i < qdCount; i++) {
           while (offset < msg.length && msg[offset] !== 0) {
@@ -585,7 +566,6 @@ async function queryMdnsUnicast(ip) {
           offset += 4;
         }
         for (let i = 0; i < anCount; i++) {
-          // Read name
           let nameStr = "";
           while (offset < msg.length) {
             if ((msg[offset] & 0xc0) === 0xc0) {
@@ -604,13 +584,12 @@ async function queryMdnsUnicast(ip) {
           if (offset + 10 > msg.length) break;
           const type = msg.readUInt16BE(offset);
           offset += 2;
-          offset += 6; // class + ttl
+          offset += 6;
           const rdLen = msg.readUInt16BE(offset);
           offset += 2;
           const rdStart = offset;
 
           if (type === 0x0c) {
-            // PTR
             let ptrName = "";
             let pOffset = offset;
             let safety = 0;
@@ -625,7 +604,7 @@ async function queryMdnsUnicast(ip) {
               }
               const len = msg[pOffset++];
               const label = msg.slice(pOffset, pOffset + len).toString("utf8");
-              if (!ptrName) ptrName = label; // first label = friendly name
+              if (!ptrName) ptrName = label;
               pOffset += len;
             }
             if (ptrName && ptrName.length > 1) {
@@ -661,59 +640,14 @@ async function queryMdnsUnicast(ip) {
 
 function getNetbiosName(ip, timeoutMs = 1500) {
   return new Promise((resolve, reject) => {
-    // Standard NBSTAT query for wildcard name "*"
     const query = Buffer.from([
-      0x00,
-      0x00, // Transaction ID
-      0x00,
-      0x10, // Flags
-      0x00,
-      0x01, // Questions: 1
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00,
-      0x00, // Answer/Auth/Additional RRs
-      0x20, // Name length byte (32)
-      // Encoded "*" wildcard (CKAAA...AAA)
-      0x43,
-      0x4b,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x41,
-      0x00, // Name terminator
-      0x00,
-      0x21, // Type: NBSTAT (0x0021)
-      0x00,
-      0x01, // Class: IN
+      0x00, 0x00, 0x00, 0x10, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x20,
+
+      0x43, 0x4b, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
+      0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41,
+      0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x00, 0x00, 0x21, 0x00,
+      0x01,
     ]);
 
     const socket = dgram.createSocket("udp4");
@@ -740,25 +674,13 @@ function getNetbiosName(ip, timeoutMs = 1500) {
         msg.toString("hex"),
       );
       try {
-        // The NBSTAT response has:
-        // - 12 bytes: DNS-like header
-        // - Question section (mirrors query): 34 name bytes + 4 type/class = 38 bytes
-        // - Answer RR header: 2 name ptr + 2 type + 2 class + 4 TTL + 2 rdlength = 12 bytes  (but name is often compressed to 0xC00C = 2 bytes)
-        // - RData: first byte = number of names
-        //
-        // So nameCount is typically at offset 12 + 38 + 12 = 62
-        // But name compression can shrink the answer name from 34 to 2 bytes → offset 56
-        // We scan both and pick the one that makes sense.
-
         let nameCount = 0;
         let nameStart = 0;
 
-        // Try to find a valid nameCount by scanning likely offsets
         for (const offset of [56, 57, 58, 62]) {
           if (offset < msg.length) {
             const candidate = msg[offset];
             if (candidate > 0 && candidate <= 20) {
-              // Validate: check that we have enough bytes for that many 18-byte entries
               if (offset + 1 + candidate * 18 <= msg.length) {
                 nameCount = candidate;
                 nameStart = offset + 1;
@@ -773,15 +695,12 @@ function getNetbiosName(ip, timeoutMs = 1500) {
           return;
         }
 
-        // Walk name entries: 15 bytes name + 1 byte type + 2 bytes flags
         for (let i = 0; i < nameCount; i++) {
           const base = nameStart + i * 18;
           const type = msg[base + 15];
           const flags = msg.readUInt16BE(base + 16);
           const isGroup = (flags & 0x8000) !== 0;
 
-          // Type 0x00 = workstation, 0x03 = messenger, 0x20 = file server
-          // Only unique (non-group) entries are machine names
           if (!isGroup && (type === 0x00 || type === 0x03 || type === 0x20)) {
             const name = msg
               .slice(base, base + 15)
@@ -807,16 +726,14 @@ function getNetbiosName(ip, timeoutMs = 1500) {
 }
 
 async function resolveHostname(ip, mdnsNames) {
-  // Instant cache hit — no need to race
   if (mdnsNames[ip]) {
     console.log(`  [mdns] ${ip} → ${mdnsNames[ip]}`);
     return mdnsNames[ip];
   }
 
-  // Race all methods in parallel, take first non-null result
   return new Promise((resolve) => {
     let settled = false;
-    let pending = 3; // number of methods racing
+    let pending = 3;
 
     const finish = (name, source) => {
       if (settled) return;
@@ -834,7 +751,6 @@ async function resolveHostname(ip, mdnsNames) {
       }
     };
 
-    // DNS reverse
     dns
       .reverse(ip)
       .then((hosts) =>
@@ -842,12 +758,10 @@ async function resolveHostname(ip, mdnsNames) {
       )
       .catch(() => finish(null, "dns"));
 
-    // Unicast mDNS
     queryMdnsUnicast(ip)
       .then((name) => finish(name || null, "mdns-unicast"))
       .catch(() => finish(null, "mdns-unicast"));
 
-    // NetBIOS
     const nbPromise =
       process.platform === "win32"
         ? getNetbiosNameWindows(ip).catch(() => null)
@@ -859,26 +773,20 @@ async function resolveHostname(ip, mdnsNames) {
 function cleanHostname(hostname, vendor) {
   if (!hostname || hostname === "") return null;
 
-  // Reject ISP reverse-DNS garbage like "192-168-1-5.domain.net"
   if (/^\d{1,3}[-.]?\d{1,3}[-.]?\d{1,3}[-.]?\d{1,3}/.test(hostname))
     return null;
 
-  // Canon: strip everything after "series"
   const seriesMatch = hostname.match(/^(.+?series)/i);
   if (seriesMatch) return seriesMatch[1].trim();
 
-  // Canon fallback: strip trailing " _XXXXXX" junk
   const canonJunk = hostname.replace(/\s+_[0-9A-F]{6,}$/i, "").trim();
   if (canonJunk !== hostname) return canonJunk;
 
-  // Google: strip the trailing hex hash
   const googleMatch = hostname.match(/^(Google[-\w]+?)-[0-9a-f]{20,}$/i);
   if (googleMatch) return googleMatch[1].replace(/-/g, " ");
 
-  // Amazon: "amzn" is useless
   if (hostname.toLowerCase() === "amzn") return null;
 
-  // MAC-style name: "70-35-60-63" → null
   if (/^([0-9a-f]{2}[-:]){2,}/i.test(hostname)) return null;
 
   return hostname;
@@ -899,7 +807,6 @@ ipcMain.handle("scan:start", async () => {
     const mdnsNames = await getMdnsNames();
     const output = execSync("arp -a").toString();
 
-    // Parse all IPs/MACs first
     const raw = [];
     for (const line of output.split("\n")) {
       const match = line.match(
@@ -919,7 +826,6 @@ ipcMain.handle("scan:start", async () => {
       raw.push({ ip, mac });
     }
 
-    // Replace the Promise.all block with this:
     const BATCH = 6;
     const devices = [];
 
@@ -961,7 +867,6 @@ ipcMain.handle("scan:start", async () => {
       devices.push(...results);
     }
 
-    // Vendor-based fallback names for devices that never respond to hostname queries
     for (const d of devices) {
       if (!d.hostnameResolved) {
         const v = d.vendor.toLowerCase();
@@ -993,7 +898,6 @@ ipcMain.handle("scan:start", async () => {
     }
 
     console.log("DEVICES FOUND:", devices.length);
-    // Log resolution results for debugging
     devices.forEach((d) =>
       console.log(`  ${d.ip} → ${d.hostname} (${d.vendor})`),
     );
@@ -1036,11 +940,11 @@ ipcMain.handle("speedtest:run", async () => {
     const candidates = [
       path.join(process.resourcesPath, "speedtest.exe"),
       path.join(__dirname, "../resources/speedtest.exe"),
-      // Explicit Ookla installer paths
+
       "C:\\Program Files\\Ookla\\Speedtest CLI\\speedtest.exe",
       "C:\\Program Files (x86)\\Ookla\\Speedtest CLI\\speedtest.exe",
       "C:\\Program Files\\Ookla\\speedtest.exe",
-      // LocalAppData variants
+
       ...(process.env.LOCALAPPDATA
         ? [
             process.env.LOCALAPPDATA +
@@ -1050,11 +954,9 @@ ipcMain.handle("speedtest:run", async () => {
               "\\Microsoft\\WinGet\\Packages\\Ookla.Speedtest.CLI_Microsoft.Winget.Source_8wekyb3d8bbwe\\speedtest.exe",
           ]
         : []),
-      // AppData\Roaming
       ...(process.env.APPDATA
         ? [process.env.APPDATA + "\\Ookla\\Speedtest CLI\\speedtest.exe"]
         : []),
-      // Chocolatey / Scoop / manual installs
       "C:\\ProgramData\\chocolatey\\bin\\speedtest.exe",
       "C:\\tools\\speedtest\\speedtest.exe",
       ...(process.env.USERPROFILE
@@ -1075,7 +977,6 @@ ipcMain.handle("speedtest:run", async () => {
       if (exists) return p;
     }
 
-    // Last resort: try bare name on PATH
     console.log("[speedtest]   trying bare 'speedtest' on PATH...");
     return "speedtest.exe";
   }
@@ -1148,7 +1049,7 @@ ipcMain.handle("apps:list", async () => {
                   installDate: a.InstallDate || null,
                   size: a.EstimatedSize
                     ? Math.round(a.EstimatedSize / 1024)
-                    : null, // MB
+                    : null,
                 })),
             );
           } catch {
@@ -1165,7 +1066,6 @@ ipcMain.handle("apps:list", async () => {
 ipcMain.handle("apps:reveal", (_e, name) => {
   const { exec } = require("child_process");
   return new Promise((resolve) => {
-    // Look up the install location from registry
     exec(
       `powershell -command "Get-ItemProperty HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*, HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*, HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\* | Where-Object { $_.DisplayName -eq '${name.replace(/'/g, "''")}' } | Select-Object -First 1 -ExpandProperty InstallLocation"`,
       (err, stdout) => {
@@ -1173,7 +1073,6 @@ ipcMain.handle("apps:reveal", (_e, name) => {
         if (!err && location) {
           shell.openPath(location);
         } else {
-          // Fallback: open Programs Files
           shell.openPath("C:\\Program Files");
         }
         resolve({ success: true });

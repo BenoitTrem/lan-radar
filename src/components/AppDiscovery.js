@@ -13,7 +13,7 @@ export default function AppDiscovery() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("ALL");
   const [search, setSearch] = useState("");
-  const [sizeSort, setSizeSort] = useState(null); // null | "asc" | "desc"
+  const [sizeSort, setSizeSort] = useState(null);
   const [revealing, setRevealing] = useState(null);
 
   useEffect(() => {

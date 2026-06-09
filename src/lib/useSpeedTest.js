@@ -29,7 +29,6 @@ export function useSpeedTest() {
       setResult(r);
       setHistory((h) => [r, ...h].slice(0, 20));
     } else {
-      // Browser mock
       await new Promise((r) => setTimeout(r, 3000));
       const r = {
         download: +(Math.random() * 200 + 50).toFixed(1),

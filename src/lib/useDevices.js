@@ -34,7 +34,6 @@ export function useDevices() {
   const devicesRef = useRef([]);
   const [pingsReady, setPingsReady] = useState(false);
 
-  // Keep devicesRef always in sync with latest devices state
   useEffect(() => {
     devicesRef.current = devices;
   }, [devices]);
@@ -44,7 +43,6 @@ export function useDevices() {
     setNotifs((prev) => [n, ...prev].slice(0, 50));
   }, []);
 
-  // ─── Initial scan ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!window.electronAPI) return;
     setScanning(true);
@@ -69,7 +67,6 @@ export function useDevices() {
     });
   }, []);
 
-  // ─── Live device events ─────────────────────────────────────────────────
   useEffect(() => {
     const api = window.electronAPI;
     if (!api) return;
@@ -95,7 +92,6 @@ export function useDevices() {
     };
   }, [pushNotif]);
 
-  // ─── Ping loop ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!window.electronAPI || devices.length === 0) return;
 
@@ -117,7 +113,7 @@ export function useDevices() {
           ),
         );
       }
-      setPingsReady(true); // ← fires after first full pass
+      setPingsReady(true);
     };
 
     pingAll();
@@ -126,7 +122,6 @@ export function useDevices() {
     return () => clearInterval(pingLoop.current);
   }, [devices.length]);
 
-  // ─── Manual rescan ──────────────────────────────────────────────────────
   const startScan = useCallback(async () => {
     setScanning(true);
     setPingsReady(false);

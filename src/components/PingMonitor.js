@@ -19,7 +19,6 @@ export default function PingMonitor({ devices, scanning, pingsReady }) {
   const [history, setHistory] = useState({});
   const [everHadPing, setEverHadPing] = useState(false);
 
-  // Once any device gets a real ping, remember that forever
   useEffect(() => {
     if (!everHadPing && devices.some((d) => d.ping !== null)) {
       setEverHadPing(true);
@@ -54,10 +53,8 @@ export default function PingMonitor({ devices, scanning, pingsReady }) {
   const data = history[selected] ?? [];
   const dev = devices.find((d) => d.id === selected);
 
-  // Show spinner if: actively scanning, OR devices exist but none pinged yet
   if (scanning || (devices.length > 0 && !pingsReady)) {
     return (
-      // ... rest of your spinner JSX unchanged
       <div>
         <h2
           style={{

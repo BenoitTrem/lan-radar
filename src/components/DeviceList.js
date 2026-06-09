@@ -10,13 +10,11 @@ let bonjourDismissed = false;
 function SimpleIcon({ icon, size = 16 }) {
   if (!icon) return <HelpCircle size={size} />;
 
-  // lucide icon type
   if (icon.type === "lucide") {
     const LucideIcon = icon.icon;
     return <LucideIcon size={size} />;
   }
 
-  // simple-icons type
   return (
     <svg
       role="img"

@@ -34,6 +34,7 @@
   "build": {
     "appId": "com.lanradar.app",
     "productName": "LAN Radar",
+    "icon": "build/icon.png",
     "files": [
       "out/**/*",
       "electron/**/*",
@@ -49,6 +50,7 @@
       "output": "dist"
     },
     "mac": {
+      "icon": "build/icon.icns",
       "target": "dmg",
       "entitlements": "electron/entitlements.mac.plist",
       "entitlementsInherit": "electron/entitlements.mac.plist",
@@ -68,10 +70,12 @@
       }
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.ico"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "build/icon.png"
     }
   }
 }
