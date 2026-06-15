@@ -1,6 +1,6 @@
 # LAN Radar
 
-A local network monitoring desktop application built with Next.js 14 and Electron.
+A local network monitoring desktop application built with Next.js and Electron.
 
 [![Download](https://img.shields.io/badge/Download-LAN%20Radar%20v1.0.0-blue?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/BenoitTrem/lan-radar/releases/download/V1.0.0/LAN.Radar.Setup.1.0.0.exe)
 
